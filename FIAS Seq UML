@@ -1,0 +1,43 @@
+' https://plantuml.com/ru/sequence-diagram
+@startuml 
+HangfireServer -> UpdatingJob : Запуск задания
+note over of UpdatingJob : CheckDo()
+alt Есть работающее задание
+  UpdatingJob -> FiasDB : Запись лога   
+  HangfireServer <- UpdatingJob : Завершение задания
+else Нет работающих заданий   
+  UpdatingJob <- FiasService : Запросить данные об актуальной версии БД ФИАС 
+  UpdatingJob <- FiasDB : Запросить данные о последней версии БД ФИАС    
+  alt Есть новая версия БД
+    note over of UpdatingJob : DoWork()    
+    UpdatingJob <- FiasService : Загрузка акуальной версии ФИАС на диск 
+    note left: LoadingActualData()    
+    UpdatingJob -> UpdatingJob : Распаковка акуальной версии ФИАС на диск   
+    note left : UnPackData()    
+    UpdatingJob -> FiasDB : Загрузка файлов в БД FIAS      
+    note left : LoadingToDb() 
+    group Загрузка файлов в БД FIAS 
+      UpdatingJob -> FiasDB : Формирование таблиц описаний типов  
+      note left : LoadTypes() 
+      UpdatingJob -> FiasDB : Формирование Bases таблиц   
+      note left : LoadBases()          
+    end    
+    UpdatingJob -> FiasDB : Генерация новой схемы
+    note left : GenerateProd()    
+    group Генерация новой схемы      
+      UpdatingJob -> FiasDB : Формирование таблицы Houses_* 
+      note right: sp FIASMakeHouses() 
+      UpdatingJob -> FiasDB : Формирование таблицы Rooms_* 
+      note right: sp FIASMakeRooms() 
+      UpdatingJob -> FiasDB : Формирование таблиц ObjectsFullAddrPath* 
+      note right: sp FIASGenerateProd()
+    end          
+    UpdatingJob -> FiasDB : Проверка сформированной схемы  
+    note left : CheckNextGroup()      
+  else Нет обновлений   
+    UpdatingJob -> FiasDB : Запись лога  
+HangfireServer <- UpdatingJob : Завершение задания  
+  end
+end
+HangfireServer <- UpdatingJob : Завершение задания
+@enduml

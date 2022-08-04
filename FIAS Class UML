@@ -1,0 +1,79 @@
+' https://plantuml.com/ru/class-diagram
+@startuml
+
+abstract class DownloadFilesManager<TRecord>{ 
+  #UpdatingContext dbContext
+  #Action<string> logger;
+  +{abstract} Reader<TRecords> Reader()
+  +{abstract} Writer<TRecords> Writer()
+  +Download()
+}
+abstract class Reader<TRecord>{
+  +{abstract} TRecords ReadFile()
+}
+abstract class Writer<TRecord>{
+  #UpdatingContext dbContext
+  +{abstract} Write(TRecords records);
+}
+
+class ReaderXML<TRecord>{
+  +TRecords ReadFile()
+}
+
+package Managers <<Rectangle>>{
+  class AddressObjectsManager{   
+    +Reader<AddressObjects> Reader()
+    +Writer<AddressObjects> Writer()
+    +Download()
+  }
+  class OTHER_MANAGERS{
+    +Reader<> Reader()
+    +Writer<> Writer()
+    +Download()
+  }
+  class RoomsManager{   
+    +Reader<Rooms> Reader()
+    +Writer<Rooms> Writer()
+    +Download()
+  }
+}
+
+
+together {
+  class WriterAddressObjectsAll{  
+    +Write(AddressObjects records);
+  }
+  class WriterAddressObjectsDelta{  
+    +Write(AddressObjects records);
+  }
+  class WriterRoomsAll{  
+    +Write(Rooms records);
+  }
+  class WriterRoomsDelta{  
+    +Write(Rooms records);
+  }
+}
+
+Reader -> DownloadFilesManager
+DownloadFilesManager <- Writer 
+Reader <|-- ReaderXML
+WriterAddressObjectsAll --[hidden] WriterAddressObjectsDelta
+WriterAddressObjectsDelta --[hidden] WriterRoomsAll
+WriterRoomsAll --[hidden] WriterRoomsDelta
+Writer <|-- WriterAddressObjectsAll
+Writer <|-- WriterAddressObjectsDelta
+Writer <|-- WriterRoomsAll
+Writer <|-- WriterRoomsDelta
+AddressObjectsManager ..[hidden] OTHER_MANAGERS
+OTHER_MANAGERS ..[hidden] RoomsManager
+DownloadFilesManager <|-- AddressObjectsManager
+DownloadFilesManager <|-- OTHER_MANAGERS 
+DownloadFilesManager <|-- RoomsManager
+RoomsManager::Reader *-- ReaderXML
+RoomsManager::Writer *-- WriterRoomsAll
+RoomsManager::Writer *-- WriterRoomsDelta
+AddressObjectsManager::Reader *-- ReaderXML
+AddressObjectsManager::Writer *-- WriterAddressObjectsAll
+AddressObjectsManager::Writer *-- WriterAddressObjectsDelta
+
+@enduml
